@@ -16,6 +16,11 @@ class VariantLooker_cls():
                 SupportingAlignments = self.SameLengthSubstitution(AltAlelle)
                 return SupportingAlignments
             
+            if len(AltAlelle)>len(self.Variant.ref):
+                SupportingAlignments = self.Insertion(AltAlelle)
+                return SupportingAlignments
+                
+            
             
     def SameLengthSubstitution(self,AltAlelle):
         c = 0
@@ -27,3 +32,17 @@ class VariantLooker_cls():
         
         if len(FastaRef) > 0:
             print(FastaRef,AltAlelle,ReadSeq)
+            
+    def Insertion(self,AltAlelle):
+        c = 0
+        pos = self.Variant.pos -1
+        GenomicStart = pos
+        GenomicEnd = pos + len(self.Variant.ref)
+        AlignmentEnd = pos + len(AltAlelle)
+        
+        FastaRef = [self.fastaChunk[n] for n,x in enumerate(self.GenomicPositions) if x >= GenomicStart and x < GenomicEnd]
+        ReadSeq = [self.query_alignment_sequence[n] for n,x in enumerate(self.GenomicPositions) if x >= GenomicStart and x < AlignmentEnd]
+        print(FastaRef,AltAlelle,ReadSeq)
+        
+        #if len(FastaRef) > 0:
+         #   print(FastaRef,AltAlelle,ReadSeq)
