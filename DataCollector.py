@@ -70,14 +70,16 @@ class DataCollector_cls():
 
 
         iposCounter=0
-
+        insertions = []
         for i in InsertionPositions:
+            insertion_sequence="".join([x for _,x in enumerate(query_alignment_sequence) if _+iposCounter in i])
+            insertions.append((i,insertion_sequence))
             query_alignment_sequence="".join([x for _,x in enumerate(query_alignment_sequence) if _+iposCounter not in i])
+            
             iposCounter=iposCounter+len(i)
-
         for p,N in enumerate(Alignment_cigarstring):
             if N=='D' or N=='N':
                 qs1=query_alignment_sequence[:p]
                 qs2=query_alignment_sequence[p:]
                 query_alignment_sequence=qs1+'-'+qs2
-        return (GenomicPositions,fastaChunk,query_alignment_sequence,Alignment_cigarstring,InsertionPositions)
+        return (GenomicPositions,fastaChunk,query_alignment_sequence,Alignment_cigarstring,InsertionPositions,insertions)

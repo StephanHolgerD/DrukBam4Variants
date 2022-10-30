@@ -21,12 +21,14 @@ class ReadFiles():
     def IterVariants(self):
         with pysam.VariantFile(self.VcfFile) as f:
             for variant in f:
-                c=0
+                c_all=0
+                c_var=0
                 AlignmentData = self.DataCollector.GetReads(str(variant.contig),variant.pos)
                 for alignment in AlignmentData:
+                    c_all=c_all+1
                     x = VariantLooker_cls(variant,alignment)
-                    x.EvaluateAlignment()
-    
+                    c_var = c_var + x.EvaluateAlignment()
+                print(c_var/c_all)
 
 
             
