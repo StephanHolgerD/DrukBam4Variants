@@ -1,4 +1,3 @@
-from typing import Counter
 from VariantMappingExaminer.ParseAlignments.VariantLooker import VariantLooker_cls
 from VariantMappingExaminer.ReadFiles.DataCollector import DataCollector_cls
 from multiprocessing import Pool, process

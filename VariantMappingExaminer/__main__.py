@@ -1,7 +1,5 @@
-from concurrent.futures import process
 from VariantMappingExaminer.ReadFiles.VcfReader import ReadVcfFile
 from VariantMappingExaminer.WriteFiles.VcfWriter import WriteVcf_cls
-
 from VariantMappingExaminer.ParseAlignments.VariantCounter import VariantCounter_cls
 import sys
 from time import time

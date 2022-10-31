@@ -1,4 +1,3 @@
-import pandas as pd
 import pysam
 
 class DataCollector_cls():

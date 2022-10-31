@@ -1,5 +1,4 @@
 import pysam
-import numpy as np
 import sys
 from VariantMappingExaminer.ReadFiles.DataCollector import DataCollector_cls
 
