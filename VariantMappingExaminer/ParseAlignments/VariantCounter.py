@@ -33,6 +33,6 @@ class VariantCounter_cls():
             c_all=c_all+1
             x = VariantLooker_cls(variant,alignment)
             c_var = c_var + x.EvaluateAlignment()
-        print(variant_key,(c_var,c_all))
+        print(variant_key,variant.alts,(c_var,c_all))
         
         return (variant_key,(c_var,c_all))
