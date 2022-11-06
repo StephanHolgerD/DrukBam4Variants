@@ -14,15 +14,15 @@ class VariantLooker_cls():
         for AltAlelle in self.Variant.alts:
             if len(AltAlelle) == len(self.Variant.ref):
                 SupportingAlignments = self.SameLengthSubstitution(AltAlelle)
-                return SupportingAlignments
+                return AltAlelle,SupportingAlignments
             
             if len(AltAlelle)>len(self.Variant.ref):
                 SupportingAlignments = self.Insertion(AltAlelle)
-                return SupportingAlignments
+                return AltAlelle,SupportingAlignments
                 
             if len(AltAlelle)<len(self.Variant.ref):
                 SupportingAlignments = self.Deletion(AltAlelle)
-                return SupportingAlignments
+                return AltAlelle,SupportingAlignments
                 
     def SameLengthSubstitution(self,AltAlelle):
         c = 0
@@ -49,7 +49,10 @@ class VariantLooker_cls():
         GenomicStart = pos
         GenomicEnd = pos + len(self.Variant.ref) 
         ReadSeq = [self.query_alignment_sequence[n] for n,x in enumerate(self.GenomicPositions) if x >= GenomicStart and x < GenomicEnd]
+        ReadSeqPlus1 = [self.query_alignment_sequence[n] for n,x in enumerate(self.GenomicPositions) if x >= GenomicStart and x < GenomicEnd+1]
+        
+        
         seq = ''.join([x for x in ReadSeq if x != '-'])
-        if seq == AltAlelle:
+        if seq == AltAlelle and ReadSeqPlus1[-1]!='-':
             return 1
         return 0

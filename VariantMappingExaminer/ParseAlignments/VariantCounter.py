@@ -1,3 +1,4 @@
+from unittest import result
 from VariantMappingExaminer.ParseAlignments.VariantLooker import VariantLooker_cls
 from VariantMappingExaminer.ReadFiles.DataCollector import DataCollector_cls
 from multiprocessing import Pool, process
@@ -26,13 +27,19 @@ class VariantCounter_cls():
         variant_key = v1
         variant = v2
         c_all=0
-        c_var=0
+        c_var={}
         DataCollector = DataCollector_cls(self.ReferenceFasta,self.BamFile)
         AlignmentData = DataCollector.GetReads(str(variant.contig),variant.pos)
         for alignment in AlignmentData:
             c_all=c_all+1
             x = VariantLooker_cls(variant,alignment)
-            c_var = c_var + x.EvaluateAlignment()
+            alt,res = x.EvaluateAlignment()
+            if alt in c_var:
+                c_var[alt]=c_var[alt]+res
+            else:
+                c_var[alt]=res
+                
+            #c_var = c_var + x.EvaluateAlignment()
         print(variant_key,variant.alts,(c_var,c_all))
         
         return (variant_key,(c_var,c_all))
