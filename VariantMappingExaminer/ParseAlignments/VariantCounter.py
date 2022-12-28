@@ -1,9 +1,9 @@
 from unittest import result
 from VariantMappingExaminer.ParseAlignments.VariantLooker import VariantLooker_cls
 from VariantMappingExaminer.ReadFiles.DataCollector import DataCollector_cls
-from multiprocessing import Pool, process
-
-
+from multiprocessing import Pool
+import numpy as np 
+import pysam
 class VariantCounter_cls():
     def __init__(self,VcfReaderObject,processes=1):
         self.variants=VcfReaderObject.variants
@@ -18,17 +18,28 @@ class VariantCounter_cls():
 
     def CallMultiProcess(self):
         mp = [(k,v) for k,v in self.variants.items()]
+        
+        mp_split = np.array_split(mp, self.processes)
         with Pool(processes=self.processes) as p:
-            r = p.starmap(self.CountVariant,mp)
-        return r
-            
+            r = p.map(self.ParseMultiList,mp_split)
+        rr = [xx for x in r for xx in x]
+        return rr
+    
+    def ParseMultiList(self,l):
+        results = []
+        with pysam.AlignmentFile(self.BamFile) as OpenBamFile:
+            with pysam.FastaFile(self.ReferenceFasta) as OpenReferenceFasta:
+                for entry in l:
+                    results.append(self.CountVariant(entry[0],entry[1],OpenReferenceFasta,OpenBamFile))
+        return results
 
-    def CountVariant(self,v1,v2):
+    def CountVariant(self,v1,v2,OpenReferenceFasta,OpenBamFile):
         variant_key = v1
         variant = v2
+        alignmentsVariant  = {}
         c_all=0
         c_var={}
-        DataCollector = DataCollector_cls(self.ReferenceFasta,self.BamFile)
+        DataCollector = DataCollector_cls(OpenReferenceFasta,OpenBamFile)
         AlignmentData = DataCollector.GetReads(str(variant.contig),variant.pos)
         for alignment in AlignmentData:
             c_all=c_all+1
@@ -38,8 +49,20 @@ class VariantCounter_cls():
                 c_var[alt]=c_var[alt]+res
             else:
                 c_var[alt]=res
+            if res == 0:
+                continue
+            
+            if alt in alignmentsVariant:
+                x = alignmentsVariant[alt]
+                x.add((alignment[6],alignment[7]))
+                alignmentsVariant[alt] = x
+            else:
+                alignmentsVariant[alt] = set()
+                x = alignmentsVariant[alt]
+                x.add((alignment[6],alignment[7]))
+                alignmentsVariant[alt] = x
+                
                 
             #c_var = c_var + x.EvaluateAlignment()
-        print(variant_key,variant.alts,(c_var,c_all))
         
-        return (variant_key,(c_var,c_all))
+        return (variant_key,(c_var,c_all),alignmentsVariant)

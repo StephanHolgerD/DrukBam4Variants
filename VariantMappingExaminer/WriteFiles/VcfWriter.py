@@ -2,14 +2,14 @@ import pysam
 
 
 class WriteVcf_cls():
-    def __init__(self,VariantCounterObject,VcfReaderObject):
+    def __init__(self,VariantCounterObject,VcfReaderObject,Outfile):
         self.ReferenceFasta=VcfReaderObject.ReferenceFasta
         self.BamFile = VcfReaderObject.BamFile
         self.InfoFieldShort = self.BamFile.split('/')[-1]
         self.InfoFieldLong = 'AF in ' + self.BamFile.split('/')[-1] + ' Alignments with Alt Allele Count / Total Allignemnts Count'
          
         self.VcfFile = VcfReaderObject.VcfFile
-        self.VcfFileOut = self.VcfFile.split('/')[-1].rstrip('.vcf') + 'anno.vcf'
+        self.VcfFileOut = Outfile
         self.VariantsInAlignments = {x[0]:x[1] for x in  VariantCounterObject.VariantsInAlignments}
         self.WriteVcfFile()
     

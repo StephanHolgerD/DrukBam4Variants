@@ -1,24 +1,26 @@
 import pysam
 
 class DataCollector_cls():
-    def __init__(self,ReferenceFasta,BamFile):
-        self.ReferenceFasta=ReferenceFasta
-        self.BamFile = BamFile
+    def __init__(self,OpenReferenceFasta,OpenBamFile):
+        self.OpenReferenceFasta=OpenReferenceFasta
+        self.OpenBamFile = OpenBamFile
     
     def GetReads(self,chrom,pos):
         fetchPos = pos -1
         ResultArray_temp = []
         ResultArray = []
-        with pysam.AlignmentFile(self.BamFile) as f:
-            for alignment in f.fetch(chrom,fetchPos,pos,until_eof=False):
-                if alignment.is_unmapped:
-                    continue
-                parsedCigarString = self.CigChunker(alignment.cigarstring)
-                ResultArray_temp.append((alignment.reference_name,
+        #with pysam.AlignmentFile(self.BamFile) as f:
+        for alignment in self.OpenBamFile.fetch(chrom,fetchPos,pos,until_eof=False):
+            if alignment.is_unmapped:
+                continue
+            parsedCigarString = self.CigChunker(alignment.cigarstring)
+            ResultArray_temp.append((alignment.reference_name,
                                     alignment.reference_start,
                                     alignment.reference_end,
                                     alignment.query_alignment_sequence,
-                                    parsedCigarString))
+                                    parsedCigarString,
+                                    alignment.query_name,
+                                    alignment.is_read1))
         for r in ResultArray_temp:
             ResultArray.append(self.ChunkFastaForAlignment(r))
         
@@ -52,12 +54,15 @@ class DataCollector_cls():
         end = AlignmentTuple[2]
         query_alignment_sequence=AlignmentTuple[3]
         cigarstring = AlignmentTuple[4]
+        query_name = AlignmentTuple[5]
+        is_read1 = AlignmentTuple[6]
+        
         Alignment_cigarstring=[x for x in cigarstring if x !='S' and x !='H']
         GenomicPositions = list(range(start,end))
-        with pysam.FastaFile(self.ReferenceFasta) as fa:
-            if chrom not in fa.references:
-                return
-            fastaChunk=str(fa.fetch(str(chrom),start,end)).upper()
+        #with pysam.FastaFile(self.ReferenceFasta) as fa:
+        if chrom not in self.OpenReferenceFasta.references:
+            return
+        fastaChunk=str(self.OpenReferenceFasta.fetch(str(chrom),start,end)).upper()
         InsertionPositions=[x for x,y in enumerate(Alignment_cigarstring) if y=='I']
         InsertionPositions=self.listConsec(InsertionPositions)
         iposCounter=0
@@ -73,4 +78,4 @@ class DataCollector_cls():
                 qs1=query_alignment_sequence[:p]
                 qs2=query_alignment_sequence[p:]
                 query_alignment_sequence=qs1+'-'+qs2
-        return (GenomicPositions,fastaChunk,query_alignment_sequence,Alignment_cigarstring,InsertionPositions,insertions)
+        return (GenomicPositions,fastaChunk,query_alignment_sequence,Alignment_cigarstring,InsertionPositions,insertions,query_name,is_read1)
