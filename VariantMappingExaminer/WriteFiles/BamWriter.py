@@ -1,9 +1,17 @@
 import pysam
-
-
+import os
+from tqdm import tqdm
 class WriteBam_cls():
-    def __init__(self,VariantCounterObject,VcfReaderObject,Outfile):
-        self.OutPath = Outfile.split('.')[0]
+    def __init__(self,VariantCounterObject,VcfReaderObject,Outfile,bamsdir):
+        if bamsdir:
+            self.OutPath = f'{bamsdir}/{Outfile.split("/")[-1].split(".")[0]}'
+            try:
+                os.makedirs(self.OutPath, exist_ok = True)
+            except OSError as error:
+                print(f"Directory {self.Outpath} can not be created")
+ 
+        else:
+            self.OutPath = Outfile.split('.')[0]
         self.ReferenceFasta=VcfReaderObject.ReferenceFasta
         self.BamFile = VcfReaderObject.BamFile
         self.OpenBamfile = pysam.AlignmentFile(self.BamFile, "rb")
@@ -17,7 +25,8 @@ class WriteBam_cls():
         return f'{variant.chrom}-{variant.pos}-{variant.ref}'
     
     def WriteBamFile(self):
-        for variant in self.VariantsInAlignments:
+        print(f'...start writing bams to {self.OutPath}*bam')
+        for variant in tqdm(self.VariantsInAlignments):
             chrom = variant[0].split('-')[0]
             pos = int(variant[0].split('-')[1])
             fetchPos = pos-1

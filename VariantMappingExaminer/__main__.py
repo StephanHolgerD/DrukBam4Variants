@@ -21,7 +21,6 @@ def main():
     requiredNamed.add_argument('-b','--bam', help='Pos. sorted and indexed bam file', required=True)
     requiredNamed.add_argument('-v','--vcf', help='vcf file with variants of interest', required=True)
     requiredNamed.add_argument('-o','--vcfout', help='vcf output', required=True)
-    
     requiredNamed.add_argument('-f','--fasta',help='fasta file of reference',required=True)
     
 
@@ -29,19 +28,21 @@ def main():
     requiredNamed.add_argument('-b','--bam', help='Pos. sorted and indexed bam file', required=True)
     requiredNamed.add_argument('-v','--vcf', help='vcf file with variants of interest', required=True)
     requiredNamed.add_argument('-o','--tsvout', help='vcf output', required=True)
-    
     requiredNamed.add_argument('-f','--fasta',help='fasta file of reference',required=True)
+
 
     optArguments = vcf_parser.add_argument_group('optional arguments')
     optArguments.add_argument('--cpu',default=1, help="number of cpu's  to run in paralell",type=int)
-    optArguments.add_argument('--bamout',default=False, help='create bams with variant supporting alignments',action='store_true')
+    optArguments.add_argument('--bamsout',default=False, help='create bams with variant supporting alignments and non supporting aligments',action='store_true')
+    optArguments.add_argument('--bamsdir',default=False, help='folder for bams',type=str)
     
     
     
     
     optArguments = tsv_parser.add_argument_group('optional arguments')
     optArguments.add_argument('--cpu',default=1, help="number of cpu's  to run in paralell",type=int)
-    optArguments.add_argument('--bamout',default=False, help='create bams with variant supporting alignments',action='store_true')
+    optArguments.add_argument('--bamsout',default=False, help='create bams with variant supporting alignments and non supporting aligments',action='store_true')
+    optArguments.add_argument('--bamsdir',default=False, help='folder for bams',type=str)
 
     if len(sys.argv)==1:
         parser.print_help(sys.stderr)
@@ -51,38 +52,38 @@ def main():
 
     
     if args.__contains__('tsvout'):
-        t=time()
         fasta = args.fasta
         bam = args.bam
         vcf = args.vcf
         proc = args.cpu
         out = args.tsvout
-        writebams = args.bamout
+        writebams = args.bamsout
+        bamsdir = args.bamsdir
         x = ReadVcfFile(fasta,bam,vcf)
         VC_object = VariantCounter_cls(x,processes=proc)
         Vcf_Writer_object = WriteTSV_cls(VC_object,x,out)
-        
+        if bamsdir and not writebams:
+            print('bams dir option is not required without bamsout')
         if writebams:
-            WriteBam_cls(VC_object,x,out)
+            WriteBam_cls(VC_object,x,out,bamsdir)
         
-        print(time()-t)
 
     if args.__contains__('vcfout'):
-        t=time()
         fasta = args.fasta
         bam = args.bam
         vcf = args.vcf
         out = args.vcfout
         proc = args.cpu
-        writebams = args.bamout
-        
+        writebams = args.bamsout
+        bamsdir = args.bamsdir
         x = ReadVcfFile(fasta,bam,vcf)
         VC_object = VariantCounter_cls(x,processes=proc)
         Vcf_Writer_object = WriteVcf_cls(VC_object,x,out)
+        if bamsdir and not writebams:
+            print('bams dir option is not required without bamsout')
         if writebams:
-            WriteBam_cls(VC_object,x,out)
+            WriteBam_cls(VC_object,x,out,bamsdir)
         
-        print(time()-t)
 if __name__ == "__main__":
     main()
 

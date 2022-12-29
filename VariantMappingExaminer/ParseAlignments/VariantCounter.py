@@ -4,6 +4,7 @@ from VariantMappingExaminer.ReadFiles.DataCollector import DataCollector_cls
 from multiprocessing import Pool
 import numpy as np 
 import pysam
+from tqdm import tqdm
 class VariantCounter_cls():
     def __init__(self,VcfReaderObject,processes=1):
         self.variants=VcfReaderObject.variants
@@ -20,6 +21,8 @@ class VariantCounter_cls():
         mp = [(k,v) for k,v in self.variants.items()]
         
         mp_split = np.array_split(mp, self.processes)
+        print(f'....start looking for variant supporting aligments in {self.BamFile}')
+        
         with Pool(processes=self.processes) as p:
             r = p.map(self.ParseMultiList,mp_split)
         rr = [xx for x in r for xx in x]
@@ -29,7 +32,7 @@ class VariantCounter_cls():
         results = []
         with pysam.AlignmentFile(self.BamFile) as OpenBamFile:
             with pysam.FastaFile(self.ReferenceFasta) as OpenReferenceFasta:
-                for entry in l:
+                for entry in tqdm(l):
                     results.append(self.CountVariant(entry[0],entry[1],OpenReferenceFasta,OpenBamFile))
         return results
 
