@@ -57,7 +57,8 @@ class DataCollector_cls():
         query_name = AlignmentTuple[5]
         is_read1 = AlignmentTuple[6]
         
-        Alignment_cigarstring=[x for x in cigarstring if x !='S' and x !='H']
+        Alignment_cigarstring=[x for x in cigarstring if x !='S' and x !='H' and x!='D']
+
         GenomicPositions = list(range(start,end))
         #with pysam.FastaFile(self.ReferenceFasta) as fa:
         if chrom not in self.OpenReferenceFasta.references:
@@ -73,6 +74,8 @@ class DataCollector_cls():
             query_alignment_sequence="".join([x for _,x in enumerate(query_alignment_sequence) if _+iposCounter not in i])
             
             iposCounter=iposCounter+len(i)
+
+        Alignment_cigarstring=[x for x in cigarstring if x !='S' and x !='H' and x!='I']
         for p,N in enumerate(Alignment_cigarstring):
             if N=='D' or N=='N':
                 qs1=query_alignment_sequence[:p]
