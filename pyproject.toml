@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "variantfinder"
-version = "0.4"
+version = "0.5"
 description = "python package to scan bam files for alignemnts variants of interest"
 authors = ["StephanHolgerD <stephdruk@googlemail.com>"]
 license = "MIT"
