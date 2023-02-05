@@ -8,15 +8,24 @@ class DataCollector_cls():
     def GetReads(self,chrom,pos,share_d):
         fetchPos = pos -1
         ResultArray = []
+        cov =0
         #with pysam.AlignmentFile(self.BamFile) as f:
         for alignment in self.OpenBamFile.fetch(chrom,fetchPos,pos,until_eof=False):
 
             if alignment.is_unmapped or alignment.query_alignment_sequence ==None:
                 continue
             
+            if cov >=200:
+                return ResultArray
+                
+            cov = cov + 1
+            
             if (alignment.query_name,alignment.is_read1) in share_d:
-                ResultArray.append(share_d[(alignment.query_name,alignment.is_read1)])
-                continue
+                try:
+                    ResultArray.append(share_d[(alignment.query_name,alignment.is_read1)])
+                    continue
+                except KeyError:
+                    pass
             
             parsedCigarString = self.CigChunker(alignment.cigarstring)
             r=(alignment.reference_name,
@@ -28,7 +37,15 @@ class DataCollector_cls():
                                     alignment.is_read1)
             
             rr=self.ChunkFastaForAlignment(r)
+            if len(list(share_d.keys())) > 1000:
+                k = list(share_d.keys())[0]
+                try:
+                    share_d.pop(k)
+                    gc.collect()
+                except KeyError:
+                    pass
             share_d[(alignment.query_name,alignment.is_read1)]=rr
+            
             ResultArray.append(rr)
         return ResultArray
     
