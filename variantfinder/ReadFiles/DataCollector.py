@@ -6,7 +6,6 @@ class DataCollector_cls():
         self.OpenBamFile = OpenBamFile
     
     def GetReads(self,chrom,pos,share_d):
-        print(len(share_d))
         fetchPos = pos -1
         ResultArray = []
         #with pysam.AlignmentFile(self.BamFile) as f:
