@@ -5,25 +5,32 @@ class DataCollector_cls():
         self.OpenReferenceFasta=OpenReferenceFasta
         self.OpenBamFile = OpenBamFile
     
-    def GetReads(self,chrom,pos):
+    def GetReads(self,chrom,pos,share_d):
+        print(len(share_d))
         fetchPos = pos -1
-        ResultArray_temp = []
         ResultArray = []
         #with pysam.AlignmentFile(self.BamFile) as f:
         for alignment in self.OpenBamFile.fetch(chrom,fetchPos,pos,until_eof=False):
-            if alignment.is_unmapped:
+
+            if alignment.is_unmapped or alignment.query_alignment_sequence ==None:
                 continue
+            
+            if (alignment.query_name,alignment.is_read1) in share_d:
+                ResultArray.append(share_d[(alignment.query_name,alignment.is_read1)])
+                continue
+            
             parsedCigarString = self.CigChunker(alignment.cigarstring)
-            ResultArray_temp.append((alignment.reference_name,
+            r=(alignment.reference_name,
                                     alignment.reference_start,
                                     alignment.reference_end,
                                     alignment.query_alignment_sequence,
                                     parsedCigarString,
                                     alignment.query_name,
-                                    alignment.is_read1))
-        for r in ResultArray_temp:
-            ResultArray.append(self.ChunkFastaForAlignment(r))
-        
+                                    alignment.is_read1)
+            
+            rr=self.ChunkFastaForAlignment(r)
+            share_d[(alignment.query_name,alignment.is_read1)]=rr
+            ResultArray.append(rr)
         return ResultArray
     
     def CigChunker(self,cigarstring):
@@ -69,7 +76,12 @@ class DataCollector_cls():
         iposCounter=0
         insertions = []
         for i in InsertionPositions:
-            insertion_sequence="".join([x for _,x in enumerate(query_alignment_sequence) if _+iposCounter in i])
+            xx=[x for _,x in enumerate(query_alignment_sequence) if _+iposCounter in i]
+            if len(xx)>0:
+                
+                insertion_sequence="".join(xx)
+            else:
+                insertion_sequence=""
             insertions.append((i,insertion_sequence))
             query_alignment_sequence="".join([x for _,x in enumerate(query_alignment_sequence) if _+iposCounter not in i])
             
