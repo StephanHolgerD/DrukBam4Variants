@@ -1,7 +1,7 @@
 from unittest import result
 from variantfinder.ParseAlignments.VariantLooker import VariantLooker_cls
 from variantfinder.ReadFiles.DataCollector import DataCollector_cls
-from multiprocessing import Pool
+from multiprocessing import Pool, Manager
 import numpy as np 
 import pysam
 from tqdm import tqdm
@@ -18,7 +18,9 @@ class VariantCounter_cls():
 
 
     def CallMultiProcess(self):
-        mp = [(k,v) for k,v in self.variants.items()]
+        manager = Manager()
+        share_d = manager.dict()
+        mp = [(k,v,share_d) for k,v in self.variants.items()]
         
         mp_split = np.array_split(mp, self.processes)
         print(f'....start looking for variant supporting aligments in {self.BamFile}')
@@ -33,17 +35,19 @@ class VariantCounter_cls():
         with pysam.AlignmentFile(self.BamFile) as OpenBamFile:
             with pysam.FastaFile(self.ReferenceFasta) as OpenReferenceFasta:
                 for entry in tqdm(l):
-                    results.append(self.CountVariant(entry[0],entry[1],OpenReferenceFasta,OpenBamFile))
+                    share_d=entry[2]
+                    results.append(self.CountVariant(entry[0],entry[1],OpenReferenceFasta,OpenBamFile,share_d))
         return results
 
-    def CountVariant(self,v1,v2,OpenReferenceFasta,OpenBamFile):
+    def CountVariant(self,v1,v2,OpenReferenceFasta,OpenBamFile,share_d):
         variant_key = v1
         variant = v2
         alignmentsVariant  = {}
         c_all=0
         c_var={}
         DataCollector = DataCollector_cls(OpenReferenceFasta,OpenBamFile)
-        AlignmentData = DataCollector.GetReads(str(variant.contig),variant.pos)
+        AlignmentData = DataCollector.GetReads(str(variant.contig),variant.pos,share_d)
+        self.AlignmentData = AlignmentData
         for alignment in AlignmentData:
             c_all=c_all+1
             x = VariantLooker_cls(variant,alignment)
@@ -67,5 +71,4 @@ class VariantCounter_cls():
                 
                 
             #c_var = c_var + x.EvaluateAlignment()
-        
-        return (variant_key,(c_var,c_all),alignmentsVariant)
+        return (variant_key,(c_var,c_all),alignmentsVariant,AlignmentData)
