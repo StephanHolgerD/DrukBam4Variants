@@ -4,12 +4,19 @@ from variantfinder.ReadFiles.DataCollector import DataCollector_cls
 
 
 class ReadVcfFile():
-    def __init__(self,ReferenceFasta,BamFile,VcfFile):
+    def __init__(self,ReferenceFasta,BamFile,VcfFile,tmpdir=None,mode='shortread'):
         self.ReferenceFasta=ReferenceFasta
         self.BamFile = BamFile
         self.VcfFile = VcfFile
-        self.DataCollector = DataCollector_cls(self.ReferenceFasta,self.BamFile)
+        self.mode =mode
+        self.tempdir = tmpdir
+        if self.mode =='longread':
+            self.tempdir = tempfile.mkdtemp()
+
+        self.DataCollector = DataCollector_cls(self.ReferenceFasta,self.BamFile,tmpdir=self.tempdir,mode=self.mode)
         self.ReadVariants()
+        if self.tempdir != None:
+            shutil.rmtree(self.tempdir)
     
     def ReadVariants(self):
         variants = {}

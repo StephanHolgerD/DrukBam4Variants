@@ -5,22 +5,29 @@ from multiprocessing import Pool, Manager
 import numpy as np 
 import pysam
 from tqdm import tqdm
+import tempfile
+import shutil
+
 class VariantCounter_cls():
-    def __init__(self,VcfReaderObject,processes=1):
+    def __init__(self,VcfReaderObject,mode='shortread',processes=1):
         self.variants=VcfReaderObject.variants
         self.ReferenceFasta=VcfReaderObject.ReferenceFasta
         self.BamFile = VcfReaderObject.BamFile
         
-        
+        self.mode = mode
+        self.tempdir = None
+        if self.mode =='longread':
+            self.tempdir = tempfile.mkdtemp()
         self.processes = processes
         self.VariantsInAlignments = self.CallMultiProcess()
-
+        if self.tempdir != None:
+            shutil.rmtree(self.tempdir)
 
 
     def CallMultiProcess(self):
-        manager = Manager()
-        share_d = manager.dict()
-        mp = [(k,v,share_d) for k,v in self.variants.items()]
+        #manager = Manager()
+        #share_d = manager.dict()
+        mp = [(k,v) for k,v in self.variants.items()]
         
         mp_split = np.array_split(mp, self.processes)
         print(f'....start looking for variant supporting aligments in {self.BamFile}')
@@ -35,18 +42,17 @@ class VariantCounter_cls():
         with pysam.AlignmentFile(self.BamFile) as OpenBamFile:
             with pysam.FastaFile(self.ReferenceFasta) as OpenReferenceFasta:
                 for entry in tqdm(l):
-                    share_d=entry[2]
-                    results.append(self.CountVariant(entry[0],entry[1],OpenReferenceFasta,OpenBamFile,share_d))
+                    results.append(self.CountVariant(entry[0],entry[1],OpenReferenceFasta,OpenBamFile))
         return results
 
-    def CountVariant(self,v1,v2,OpenReferenceFasta,OpenBamFile,share_d):
+    def CountVariant(self,v1,v2,OpenReferenceFasta,OpenBamFile):
         variant_key = v1
         variant = v2
         alignmentsVariant  = {}
         c_all=0
         c_var={}
-        DataCollector = DataCollector_cls(OpenReferenceFasta,OpenBamFile)
-        AlignmentData = DataCollector.GetReads(str(variant.contig),variant.pos,share_d)
+        DataCollector = DataCollector_cls(OpenReferenceFasta,OpenBamFile,tmpdir=self.tempdir,mode=self.mode)
+        AlignmentData = DataCollector.GetReads(str(variant.contig),variant.pos)
         self.AlignmentData = AlignmentData
         for alignment in AlignmentData:
             c_all=c_all+1

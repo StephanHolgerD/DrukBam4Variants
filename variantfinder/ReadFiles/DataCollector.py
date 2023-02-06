@@ -1,11 +1,14 @@
 import pysam
-
+import os
+import json
 class DataCollector_cls():
-    def __init__(self,OpenReferenceFasta,OpenBamFile):
+    def __init__(self,OpenReferenceFasta,OpenBamFile,tmpdir=None,mode='shortread'):
         self.OpenReferenceFasta=OpenReferenceFasta
         self.OpenBamFile = OpenBamFile
+        self.mode = mode
+        self.tmpdir = tmpdir
     
-    def GetReads(self,chrom,pos,share_d):
+    def GetReads(self,chrom,pos):
         fetchPos = pos -1
         ResultArray = []
         cov =0
@@ -20,11 +23,23 @@ class DataCollector_cls():
                 
             cov = cov + 1
             
-            if (alignment.query_name,alignment.is_read1) in share_d:
+            if self.mode=='longread':
                 try:
-                    ResultArray.append(share_d[(alignment.query_name,alignment.is_read1)])
-                    continue
-                except KeyError:
+                    if os.path.isfile(f'{self.tmpdir}/{alignment.query_name}.json'):
+                        print(f'{self.tmpdir}/{alignment.query_name}.json')
+                        with open(f'{self.tmpdir}/{alignment.query_name}.json') as json_file:
+                            data = json.load(json_file)
+                            rr =(data['GenomicPositions'],
+                             data['fastaChunk'],
+                             data['query_alignment_sequence'],
+                             data['Alignment_cigarstring'],
+                             data['InsertionPositions'],
+                             data['insertions'],
+                             data['query_name'],
+                             data['is_read1'])
+                            ResultArray.append(rr)
+                            continue
+                except:
                     pass
             
             parsedCigarString = self.CigChunker(alignment.cigarstring)
@@ -37,14 +52,18 @@ class DataCollector_cls():
                                     alignment.is_read1)
             
             rr=self.ChunkFastaForAlignment(r)
-            if len(list(share_d.keys())) > 1000:
-                k = list(share_d.keys())[0]
-                try:
-                    share_d.pop(k)
-                    gc.collect()
-                except KeyError:
-                    pass
-            share_d[(alignment.query_name,alignment.is_read1)]=rr
+            jsondumpDict = {'GenomicPositions':rr[0],
+                'fastaChunk':rr[1],
+                'query_alignment_sequence':rr[2],
+                'Alignment_cigarstring':rr[3],
+                'InsertionPositions':rr[4],
+                'insertions':rr[5],
+                'query_name':rr[6],
+                'is_read1':rr[7]}
+            if self.mode=='longread':
+                
+                with open(f'{self.tmpdir}/{alignment.query_name}.json','w') as outfile:
+                    json.dump(jsondumpDict, outfile)
             
             ResultArray.append(rr)
         return ResultArray
